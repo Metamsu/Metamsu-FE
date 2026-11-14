@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, ApiError, message } from "./api";
 import {
   Empty,
@@ -8,7 +8,8 @@ import {
   TagFilter,
 } from "./components";
 import { useResource } from "./hooks";
-import type { Question, Tag } from "./types";
+import { ReviewForm, ReviewSummary } from "./QuestionReview";
+import type { Question, QuestionReview, Tag } from "./types";
 
 export function Manage({
   tags,
@@ -30,6 +31,18 @@ export function Manage({
     revision,
   );
   const busyRef = useRef(false);
+  const [unreviewedOnly, setUnreviewedOnly] = useState(false);
+  // Reviews saved since the list loaded, so judging a question does not reload the whole list.
+  const [reviewed, setReviewed] = useState<
+    Record<string, QuestionReview | null>
+  >({});
+  const [reviewTick, setReviewTick] = useState(0);
+  useEffect(() => setReviewed({}), [resource.data]);
+  const reviewOf = (question: Question) =>
+    question.id in reviewed ? reviewed[question.id] : (question.review ?? null);
+  const visible = resource.data?.filter(
+    (question) => !unreviewedOnly || !reviewOf(question),
+  );
   async function remove(question: Question) {
     if (
       busyRef.current ||
@@ -258,18 +271,33 @@ export function Manage({
         </section>
       ) : (
         <>
+          <ReviewSummary revision={revision + reviewTick} />
           <div className="section-heading">
             <span className="muted">
-              {resource.data ? `${resource.data.length}개의 문제` : "나의 문제"}
+              {visible ? `${visible.length}개의 문제` : "나의 문제"}
             </span>
-            <TagFilter tags={tags} value={tag} onChange={setTag} />
+            <div className="manage-filters">
+              <label className="filter check">
+                <input
+                  type="checkbox"
+                  checked={unreviewedOnly}
+                  onChange={(e) => setUnreviewedOnly(e.target.checked)}
+                />
+                아직 평가 안 한 문항만 보기
+              </label>
+              <TagFilter tags={tags} value={tag} onChange={setTag} />
+            </div>
           </div>
           <ErrorBox error={resource.error} retry={resource.reload} />
           {resource.loading && <Loading />}
           {resource.data &&
+            visible &&
             (resource.data.length ? (
               <div className="question-list">
-                {resource.data.map((question) => (
+                {visible.length === 0 && (
+                  <p className="muted">평가하지 않은 문항이 없습니다.</p>
+                )}
+                {visible.map((question) => (
                   <article className="card" key={question.id}>
                     <QuestionMeta question={question} tags={tags} />
                     <h3>{question.text}</h3>
@@ -289,6 +317,18 @@ export function Manage({
                         {question.explanation || "해설이 없습니다."}
                       </p>
                     </details>
+                    <ReviewForm
+                      key={`${question.id}-${question.version}`}
+                      question={question}
+                      review={reviewOf(question)}
+                      onChange={(review) => {
+                        setReviewed((current) => ({
+                          ...current,
+                          [question.id]: review,
+                        }));
+                        setReviewTick((tick) => tick + 1);
+                      }}
+                    />
                     <div className="actions">
                       <button
                         className="secondary small"

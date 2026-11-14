@@ -1,5 +1,7 @@
 # ReCall frontend
 
+한국어 종합 사용법은 백엔드 저장소의 [USAGE.md](https://github.com/Metamsu/Metamsu-BE/blob/feature/quality-eval/USAGE.md)를 보세요.
+
 Korean, responsive React + TypeScript + Vite client. All records come from the server; there is no fake API fallback, authentication screen, or browser-side answer bank.
 
 ## Run
@@ -27,6 +29,7 @@ npm run build
 - **Fixed DEMO examples are separate from uploaded PDFs** and use the real server DEMO endpoint, not client fallback data. They allow a key-free quiz/review flow.
 - Generation jobs are polled while active; failed polling has explicit retry. Partial generation preserves successful questions. Chunk status, attempts, duration, and token counts are visible.
 - Quiz/due requests never ask for management answers. Feedback appears only after an attempt response. Uncertain network/server failures retain the same selection and idempotency key for retry; controls prevent double submission. A 409 asks the learner to reload rather than resubmitting stale content. A definitive 404 offers skip/reload (or results at the end) instead of retrying a deleted question; completed session answers remain intact.
+- The question library has a quality-review panel. Each question can be marked usable / not usable and tag correct / wrong, with a reason and memo when not usable. Saving a review updates the summary (progress, usable %, tag-match % against the server's targets) without reloading the list. "아직 평가 안 한 문항만 보기" filters to unreviewed questions. The CSV button downloads `/api/reviews/export.csv` through `fetch`, because a plain link cannot send the learner token.
 - Edit warns and confirms that prior attempts/review state are reset. Delete confirms exclusion from active questions and stats. Dashboard and server result views reload after mutations.
 - Reviews show only server-due questions. Asia/Seoul dates, box 1 on first answer, maximum box 5, and 1/3/7/14/30-day intervals are explained; scheduling remains server-authoritative.
 - Session results are ephemeral UI summaries; historical accuracy and unresolved latest-wrong questions are server records. Operating-system tags are explicitly marked provisional, not verified against a syllabus.
