@@ -3,6 +3,7 @@ export type Config = {
   liveEnabled: boolean;
   courseName: string;
   timezone: string;
+  promptVersion?: string;
 };
 export type Concept = {
   tagId: string;
@@ -36,6 +37,7 @@ export type Job = {
   questionCount: number;
   error: string | null;
   createdAt: string;
+  promptVersion?: string | null;
   chunks?: {
     index: number;
     status: string;
@@ -62,6 +64,36 @@ export type Question = {
   latestCorrect: boolean | null;
   correctIndex?: number;
   explanation?: string;
+  jobId?: string;
+  promptVersion?: string | null;
+  review?: QuestionReview | null;
+};
+export type IssueType =
+  | "WRONG_ANSWER"
+  | "AMBIGUOUS"
+  | "OFF_TOPIC"
+  | "TOO_EASY"
+  | "DUPLICATE"
+  | "OTHER";
+export type QuestionReview = {
+  usable: boolean;
+  tagCorrect: boolean;
+  issueType: IssueType | null;
+  memo: string | null;
+  updatedAt: string;
+};
+export type ReviewSummary = {
+  questionCount: number;
+  reviewedCount: number;
+  usableCount: number;
+  usableRate: number;
+  tagCorrectCount: number;
+  tagCorrectRate: number;
+  issues: Record<IssueType, number>;
+  targetUsableRate: number;
+  targetTagCorrectRate: number;
+  usableTargetMet: boolean | null;
+  tagTargetMet: boolean | null;
 };
 export type Attempt = {
   id: string;

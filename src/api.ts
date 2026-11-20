@@ -51,6 +51,41 @@ export async function api<T>(
   return response.json() as Promise<T>;
 }
 
+// A plain link cannot send the learner token, so the file is fetched and handed to the browser.
+export async function download(path: string, filename: string) {
+  const headers = new Headers();
+  const token = learnerToken;
+  if (token) headers.set("X-Learner-Token", token);
+  let response: Response;
+  try {
+    response = await fetch(`/api${path}`, { headers });
+  } catch {
+    throw new ApiError(
+      0,
+      "NETWORK_ERROR",
+      "서버에 연결할 수 없습니다. 연결 상태를 확인하고 다시 시도해 주세요.",
+    );
+  }
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    if (response.status === 401 && token && token === learnerToken)
+      window.dispatchEvent(new Event("recall:unauthorized"));
+    throw new ApiError(
+      response.status,
+      body?.code || "REQUEST_FAILED",
+      body?.message || `요청에 실패했습니다 (${response.status}).`,
+    );
+  }
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export const post = <T>(path: string, body: unknown) =>
   api<T>(path, { method: "POST", body: JSON.stringify(body) });
 export const message = (error: unknown) =>
